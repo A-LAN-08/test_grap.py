@@ -29,28 +29,32 @@ class MainWindow(QMainWindow):
         left_frame.setStyleSheet("border: 1px solid black;")
 
         left_layout = QVBoxLayout(left_frame)
-        left_layout.setContentsMargins(0,0,0,0)#1,1,1,1)
-        left_layout.setSpacing(1)
+        left_layout.setContentsMargins(0,0,0,0)
+        left_layout.setSpacing(0)
 
         left_btn_heights = 100
 
         mouse_btn = QPushButton()
-        self.scale_img("mouse.jpg", "mouse_scaled.jpg", 40, 50)
-
         mouse_btn.setStyleSheet("""
-        QPushButton {background-image: url('mouse_scaled.jpg'); background-repeat: no-repeat; background-position: center}
-        QPushButton:hover {background: #34abeb} 
-        QPushButton:pressed {background-color: #1338bd} 
+        QPushButton {background-image: url('img_src/mouse_icon_scaled.jpg'); background-repeat: no-repeat; background-position: center}
+        QPushButton:hover {background-image: url('img_src/mouse_icon_hover_scaled.jpg')} 
+        QPushButton:pressed {background-image: url('img_src/mouse_icon_selected_scaled.jpg')} 
         """)
         mouse_btn.setFixedHeight(left_btn_heights)
-
         mouse_btn.clicked.connect(self.testfunc)
 
-        # line_tool = QPushButton()
-        # line_tool.setFixedHeight(left_btn_heights)
+        line_tool_btn = QPushButton()
+        line_tool_btn.setStyleSheet("""
+        QPushButton {background-image: url('img_src/line_tool_scaled.jpg'); background-repeat: no-repeat; background-position: center}
+        QPushButton:hover {background-image: url('img_src/line_tool_hover_scaled.jpg')} 
+        QPushButton:pressed {background-image: url('img_src/line_tool_selected_scaled.jpg')} 
+        """)
+        line_tool_btn.setFixedHeight(left_btn_heights)
+        line_tool_btn.clicked.connect(self.testfunc)
+
 
         left_layout.addWidget(mouse_btn)
-        # left_layout.addWidget(line_tool)
+        left_layout.addWidget(line_tool_btn)
         left_layout.addStretch()
 
         ##### --- Center bar --- #####
@@ -82,7 +86,7 @@ class MainWindow(QMainWindow):
         profile_frame_layout.setAlignment(Qt.AlignCenter)
 
         circle_label = QLabel()
-        pixmap = QPixmap("person_icon.jpg")
+        pixmap = QPixmap("img_src/person_icon.jpg")
         if pixmap.isNull():
             pixmap = QPixmap(200, 200)
             pixmap.fill(Qt.gray)
@@ -114,6 +118,7 @@ class MainWindow(QMainWindow):
     def testfunc(self):
         print("testfunc")
 
+    @classmethod
     def coloured_frame(self, colour, min_height=None):
         frame = QFrame()
         frame.setFrameShape(QFrame.StyledPanel)
@@ -127,6 +132,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(5, 5, 5, 5)
         return frame
 
+    @classmethod
     def circle_bitmap(self, pixmap, diameter):
         pixmap = pixmap.scaled(diameter, diameter, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
 
@@ -142,19 +148,11 @@ class MainWindow(QMainWindow):
         painter.end()
         return mask
 
-    def scale_img(self, old_path, new_path, x, y):
-        img = QPixmap(old_path).scaled(x,y)
-        img.save(new_path)
-        created_paths.append(new_path)
-
-    def closeEvent(self, event):
-        for created_path in created_paths:
-            os.remove(created_path)
+    def closeEvent(self, event) -> None:
+        # for created_path in created_paths:
+        #     os.remove(created_path)
         event.accept()
 
-
-
-created_paths = []
 
 app = QApplication(sys.argv)
 window = MainWindow()
