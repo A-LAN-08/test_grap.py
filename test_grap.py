@@ -16,6 +16,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Dashboard Layout Example")
         self.setGeometry(100, 100, 1500, 900)
+        self.btns = {}
 
         ##### --- Main alignment --- #####
         central = QWidget()
@@ -33,24 +34,28 @@ class MainWindow(QMainWindow):
         left_layout.setSpacing(0)
 
         left_btn_heights = 100
+        self.btns["left_btns"] = []
 
-        mouse_btn = QPushButton()
-        mouse_btn.setStyleSheet("""
-        QPushButton {background-image: url('img_src/mouse_icon_scaled.jpg'); background-repeat: no-repeat; background-position: center}
-        QPushButton:hover {background-image: url('img_src/mouse_icon_hover_scaled.jpg')} 
-        QPushButton:pressed {background-image: url('img_src/mouse_icon_selected_scaled.jpg')} 
-        """)
-        mouse_btn.setFixedHeight(left_btn_heights)
-        mouse_btn.clicked.connect(self.testfunc)
+        mouse_btn = self.make_btn("mouse_tool", "left_btns", "img_src/mouse_icon_scaled", "img_src/mouse_icon_hover_scaled", "img_src/mouse_icon_selected_scaled", left_btn_heights)
+        line_tool_btn = self.make_btn("line_tool", "left_btns", "img_src/line_tool_scaled", "img_src/line_tool_hover_scaled", "img_src/line_tool_selected_scaled", left_btn_heights)
 
-        line_tool_btn = QPushButton()
-        line_tool_btn.setStyleSheet("""
-        QPushButton {background-image: url('img_src/line_tool_scaled.jpg'); background-repeat: no-repeat; background-position: center}
-        QPushButton:hover {background-image: url('img_src/line_tool_hover_scaled.jpg')} 
-        QPushButton:pressed {background-image: url('img_src/line_tool_selected_scaled.jpg')} 
-        """)
-        line_tool_btn.setFixedHeight(left_btn_heights)
-        line_tool_btn.clicked.connect(self.testfunc)
+        # mouse_btn = QPushButton()
+        # mouse_btn.setStyleSheet("""
+        # QPushButton {background-image: url('img_src/mouse_icon_scaled.jpg'); background-repeat: no-repeat; background-position: center}
+        # QPushButton:hover {background-image: url('img_src/mouse_icon_hover_scaled.jpg')}
+        # QPushButton:pressed {background-image: url('img_src/mouse_icon_selected_scaled.jpg')}
+        # """)
+        # mouse_btn.setFixedHeight(left_btn_heights)
+        # mouse_btn.clicked.connect(lambda: self.testfunc("mouse"))
+        #
+        # line_tool_btn = QPushButton()
+        # line_tool_btn.setStyleSheet("""
+        # QPushButton {background-image: url('img_src/line_tool_scaled.jpg'); background-repeat: no-repeat; background-position: center}
+        # QPushButton:hover {background-image: url('img_src/line_tool_hover_scaled.jpg')}
+        # QPushButton:pressed {background-image: url('img_src/line_tool_selected_scaled.jpg')}
+        # """)
+        # line_tool_btn.setFixedHeight(left_btn_heights)
+        # line_tool_btn.clicked.connect(lambda: self.testfunc("line_tool"))
 
 
         left_layout.addWidget(mouse_btn)
@@ -115,8 +120,39 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(center_frame, 15)
         main_layout.addWidget(right_frame, 3)
 
-    def testfunc(self):
-        print("testfunc")
+    def testfunc(self, tool):
+        print("testfunc", tool)
+
+    def make_btn(self, name, group, normal_img, hover_img, selected_img, height = None, width = None):
+        btn = QPushButton()
+        btn.setCheckable(True)
+        btn.setFixedHeight(height)
+
+        btn.normal_img = normal_img
+        btn.hover_img = hover_img
+        btn.selected_img = selected_img
+
+        btn.setStyleSheet(f"""
+        QPushButton {{background-image: url('{normal_img}'); background-repeat: no-repeat; background-position: center}}
+        QPushButton:hover {{background-image: url('{hover_img}')}} 
+        """)
+
+        btn.clicked.connect(lambda checked, b=btn: self.handle_click(b))
+        self.btns[group].append(btn)
+        return btn
+
+    def handle_click(self, clicked_btn):
+        for btn_arr in self.btns.values():
+            for btn in btn_arr:
+                if btn == clicked_btn:
+                    btn.setStyleSheet(f"""
+                        QPushButton {{background-image: url('{btn.selected_img}'); background-repeat: no-repeat; background-position: center;}}""")
+                else:
+                    btn.setChecked(False)
+                    btn.setStyleSheet(f"""QPushButton {{background-image: url('{btn.normal_img}'); background-repeat: no-repeat; background-position: center;}}
+                                        QPushButton:hover {{background-image: url('{btn.hover_img}')}}""")
+
+
 
     @classmethod
     def coloured_frame(self, colour, min_height=None):
