@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import *
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.scale_img("img_ogs/line_tool_selected.jpg", "img_src/line_tool_selected_scaled.jpg", 80, 100)
+        self.scale_img("img_ogs/line_graph_icon.png", "img_src/line_graph_icon_scaled.png", 80, 100)
 
     def scale_img(self, old_path, new_path, x, y) -> None:
         img = QPixmap(old_path).scaled(x, y)
