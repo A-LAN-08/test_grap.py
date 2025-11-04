@@ -6,7 +6,7 @@ import os
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QColor, QPalette, QPainter, QPixmap, QPainterPath, QBrush
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
+    QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
     QLabel, QPushButton, QFrame
 )
 
@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
         top_frame = QFrame()
         top_frame.setStyleSheet("border: 1px solid black")
         top_layout = QHBoxLayout(top_frame)
+        top_layout.setAlignment(Qt.AlignHCenter)
         top_layout.setContentsMargins(0,0,0,0)
         top_layout.setSpacing(0)
 
@@ -61,20 +62,48 @@ class MainWindow(QMainWindow):
         graph_type_icon = QPushButton()
         graph_type_icon.setCheckable(True)
         graph_type_icon.setFixedWidth(top_btn_widths)
-
         graph_type_icon.setStyleSheet(f"""
         QPushButton {{background-image: url('img_src/candlestick_icon_scaled.png'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
         QPushButton:hover {{background-color: #adadad}}
-        QPushButton:pressed {{background-image: url('img_src/line_graph_icon_scaled.png'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
-        """)
+        QPushButton:checked {{background-image: url('img_src/line_graph_icon_scaled.png'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
+        QPushButton:checked:hover {{background-color: #adadad}}        """)
+        graph_type_icon.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         graph_type_icon.clicked.connect(lambda checked, n="graph_type": self.testfunc(n))
-        self.btns["top_btns"].append(graph_type_icon)
+
+        add_stock_icon = QPushButton()
+        add_stock_icon.setFixedWidth(top_btn_widths)
+        add_stock_icon.setStyleSheet(f"""
+        QPushButton {{background-image: url('img_src/add_stock_icon_scaled.png'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
+        QPushButton:hover {{background-color: #adadad}}
+        QPushButton:pressed {{background-color: #858585}}        """)
+        add_stock_icon.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        add_stock_icon.clicked.connect(lambda checked, n="add_stock": self.testfunc(n))
+
+        remove_stock_icon = QPushButton()
+        remove_stock_icon.setFixedWidth(top_btn_widths)
+        remove_stock_icon.setStyleSheet(f"""
+        QPushButton {{background-image: url('img_src/remove_stock_icon_scaled.png'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
+        QPushButton:hover {{background-color: #adadad}}
+        QPushButton:pressed {{background-color: #858585}}        """)
+        remove_stock_icon.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        remove_stock_icon.clicked.connect(lambda checked, n="remove_stock": self.testfunc(n))
+
+        clear_graph_icon = QPushButton()
+        clear_graph_icon.setFixedWidth(top_btn_widths)
+        clear_graph_icon.setStyleSheet(f"""
+        QPushButton {{background-image: url('img_src/clear_graph_icon_scaled.png'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
+        QPushButton:hover {{background-color: #adadad}}
+        QPushButton:pressed {{background-color: #858585}}        """)
+        clear_graph_icon.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        clear_graph_icon.clicked.connect(lambda checked, n="clear_graph": self.testfunc(n))
+
+        self.btns["top_btns"].append([graph_type_icon, add_stock_icon, remove_stock_icon, clear_graph_icon])
 
         top_layout.addWidget(graph_type_icon)
+        top_layout.addWidget(add_stock_icon)
+        top_layout.addWidget(remove_stock_icon)
+        top_layout.addWidget(clear_graph_icon)
         top_layout.addStretch()
-        # top_centre = self.coloured_frame("transparent")
-        # top_centre_layout = QHBoxLayout(top_centre)
-        # top_centre_layout.addStretch()
 
         # Graph area
         graph_frame = self.coloured_frame("transparent")
@@ -138,27 +167,25 @@ class MainWindow(QMainWindow):
         elif width and not height:
             btn.setFixedWidth(width)
 
-        btn.normal_img = icon_img
-
+        btn.img = icon_img
         btn.setStyleSheet(f"""
-        QPushButton {{background-image: url('{btn.normal_img}'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
+        QPushButton {{background-image: url('{btn.img}'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
         QPushButton:hover {{background-color: #adadad}} 
         """)
 
-        btn.clicked.connect(lambda checked, b=btn, n=name: self.handle_click(b, n))
+        btn.clicked.connect(lambda checked, b=btn, n=name, g=group: self.handle_click(b, n, g))
         self.btns[group].append(btn)
         return btn
 
-    def handle_click(self, clicked_btn, name):
-        for btn_arr in self.btns.values():
-            for btn in btn_arr:
-                if btn == clicked_btn:
-                    btn.setStyleSheet(f"""QPushButton {{background-image: url('{btn.normal_img}'); background-repeat: no-repeat; background-position: center; background-color: #8a8a8a}}""")
-                    self.testfunc(name)
-                else:
-                    btn.setChecked(False)
-                    btn.setStyleSheet(f"""QPushButton {{background-image: url('{btn.normal_img}'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
-                                          QPushButton:hover {{background-color: #adadad}} """)
+    def handle_click(self, clicked_btn, name, group):
+        for btn in self.btns[group]:
+            if btn == clicked_btn:
+                btn.setStyleSheet(f"""QPushButton {{background-image: url('{btn.img}'); background-repeat: no-repeat; background-position: center; background-color: #8a8a8a}}""")
+                self.testfunc(name)
+            else:
+                btn.setChecked(False)
+                btn.setStyleSheet(f"""QPushButton {{background-image: url('{btn.img}'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
+                                      QPushButton:hover {{background-color: #adadad}} """)
 
 
 
@@ -193,8 +220,6 @@ class MainWindow(QMainWindow):
         return mask
 
     def closeEvent(self, event) -> None:
-        # for created_path in created_paths:
-        #     os.remove(created_path)
         event.accept()
 
 
