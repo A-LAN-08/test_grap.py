@@ -136,13 +136,24 @@ class MainWindow(QMainWindow):
         if btn.name == "save_graph_btn":
             self.show_popup(btn)
 
-    def save_graph(self, input_box, popup):
-        popup.accept()
-        self.msg = QLabel("Saved.", self)
-        self.msg.setWindowFlags(Qt.Tooltip)
-        self.msg.show()
-        QTimer.singleShot(2000, self.msg.close)
+    def save_graph(self, input_box):
         print(f"Saved. {input_box.text()}")
+
+        msg = QWidget(self)
+        msg.setWindowFlags(Qt.FramelessWindowHint | Qt.BypassWindowManagerHint)
+        msg.setAttribute(Qt.WA_DeleteOnClose)
+
+        layout = QVBoxLayout(msg)
+        label = QLabel("Saved.")
+        label.setStyleSheet("background-color: black; color: white; padding: 5px; border-radius: 5px;")
+        layout.addWidget(label)
+        msg.adjustSize()
+
+        pos = self.rect().center() - msg.rect().center()
+        msg.move(pos)
+        msg.show()
+
+        QTimer.singleShot(2000, msg.close)
 
     def show_popup(self, btn):
         popup = QDialog(self)
@@ -157,7 +168,12 @@ class MainWindow(QMainWindow):
         label = QLabel("Enter the name to save the graph as.")
         input_box = QLineEdit()
         input_box.setPlaceholderText("Name...")
-        input_box.returnPressed.connect(lambda i=input_box, p=popup: self.save_graph(i, p))
+
+        def save_and_close():
+            self.save_graph(input_box)
+            popup.accept()
+
+        input_box.returnPressed.connect(save_and_close)
 
         layout.addWidget(label)
         layout.addWidget(input_box)
