@@ -60,16 +60,17 @@ class MainWindow(QMainWindow):
         top_btn_widths = 100
         self.btns["top_btns"] = []
 
-        graph_type_icon = QPushButton()
-        graph_type_icon.setCheckable(True)
-        graph_type_icon.setFixedWidth(top_btn_widths)
-        graph_type_icon.setStyleSheet(f"""
+        graph_type_btn = QPushButton()
+        graph_type_btn.setCheckable(True)
+        graph_type_btn.setFixedWidth(top_btn_widths)
+        graph_type_btn.setStyleSheet(f"""
         QPushButton {{background-image: url('img_src/candlestick_icon_scaled.png'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
         QPushButton:hover {{background-color: #adadad}}
         QPushButton:checked {{background-image: url('img_src/line_graph_icon_scaled.png'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
         QPushButton:checked:hover {{background-color: #adadad}}        """)
-        graph_type_icon.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
-        graph_type_icon.clicked.connect(lambda checked, n="graph_type": self.testfunc(n))
+        graph_type_btn.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        graph_type_btn.name = "graph_type_btn"
+        graph_type_btn.clicked.connect(lambda checked, b=graph_type_btn: self.testfunc(b))
 
         add_stock_btn = self.make_unique_btn("add_stock_btn", "top_btns", 'img_src/add_stock_icon_scaled.png', width=top_btn_widths)
         remove_stock_btn = self.make_unique_btn("remove_stock_btn", "top_btns", 'img_src/remove_stock_icon_scaled.png', width=top_btn_widths)
@@ -77,7 +78,7 @@ class MainWindow(QMainWindow):
 
         save_graph_btn = self.make_unique_btn("save_graph_btn", "top_btns", "img_src/save_graph_icon.png", width=top_btn_widths)
 
-        top_layout.addWidget(graph_type_icon)
+        top_layout.addWidget(graph_type_btn)
         top_layout.addWidget(add_stock_btn)
         top_layout.addWidget(remove_stock_btn)
         top_layout.addWidget(clear_graph_btn)
@@ -135,12 +136,12 @@ class MainWindow(QMainWindow):
         if btn.name == "save_graph_btn":
             self.show_popup(btn)
 
-    def save_graph(self, input_box):
-        self.accept()
-        msg = QLabel("Saved.", self)
-        msg.setWindowFlags(Qt.Tooltip)
-        msg.show()
-        QTimer.singleShot(2000, msg.close)
+    def save_graph(self, input_box, popup):
+        popup.accept()
+        self.msg = QLabel("Saved.", self)
+        self.msg.setWindowFlags(Qt.Tooltip)
+        self.msg.show()
+        QTimer.singleShot(2000, self.msg.close)
         print(f"Saved. {input_box.text()}")
 
     def show_popup(self, btn):
@@ -156,7 +157,7 @@ class MainWindow(QMainWindow):
         label = QLabel("Enter the name to save the graph as.")
         input_box = QLineEdit()
         input_box.setPlaceholderText("Name...")
-        input_box.returnPressed.connect(lambda i=input_box: self.save_graph(i))
+        input_box.returnPressed.connect(lambda i=input_box, p=popup: self.save_graph(i, p))
 
         layout.addWidget(label)
         layout.addWidget(input_box)
