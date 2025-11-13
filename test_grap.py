@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QColor, QPalette, QPainter, QPixmap, QPainterPath, QBrush
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
-    QLabel, QPushButton, QFrame, QDialog, QLineEdit
+    QLabel, QPushButton, QFrame, QDialog, QLineEdit, QSlider
 )
 from PyQt5.uic.Compiler.qtproxies import QtWidgets
 
@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         center_frame = QFrame()
         center_layout = QVBoxLayout(center_frame)
 
-        # Top bar
+        ## Top bar
         top_frame = QFrame()
         top_frame.setStyleSheet("border: 1px solid black")
         top_layout = QHBoxLayout(top_frame)
@@ -75,7 +75,6 @@ class MainWindow(QMainWindow):
         add_stock_btn = self.make_unique_btn("add_stock_btn", "top_btns", 'img_src/add_stock_icon_scaled.png', width=top_btn_widths)
         remove_stock_btn = self.make_unique_btn("remove_stock_btn", "top_btns", 'img_src/remove_stock_icon_scaled.png', width=top_btn_widths)
         clear_graph_btn = self.make_unique_btn("clear_graph_btn", "top_btns", 'img_src/clear_graph_icon_scaled.png', width=top_btn_widths)
-
         save_graph_btn = self.make_unique_btn("save_graph_btn", "top_btns", "img_src/save_graph_icon.png", width=top_btn_widths)
 
         top_layout.addWidget(graph_type_btn)
@@ -85,7 +84,7 @@ class MainWindow(QMainWindow):
         top_layout.addStretch()
         top_layout.addWidget(save_graph_btn)
 
-        # Graph area
+        ## Graph area
         graph_frame = self.coloured_frame("transparent")
         graph_label = QLabel("Graph Area")
         graph_label.setAlignment(Qt.AlignCenter)
@@ -98,7 +97,7 @@ class MainWindow(QMainWindow):
         right_frame = QFrame()
         right_layout = QVBoxLayout(right_frame)
 
-        # Profile screen
+        ## Profile screen
         profile_frame = QWidget()
         profile_frame.setStyleSheet("background-color: None;")
         profile_frame_layout = QVBoxLayout(profile_frame)
@@ -112,10 +111,50 @@ class MainWindow(QMainWindow):
 
         profile_frame_layout.addWidget(circle_label, alignment=Qt.AlignCenter)
 
-        # Prediction settings frame
-        prediction_settings_frame = self.coloured_frame("transparent")
+        ## Prediction settings frame
+        prediction_settings_frame = QFrame(); prediction_settings_frame.setStyleSheet("border: 1px solid black")
+        prediction_settings_layout = QVBoxLayout(prediction_settings_frame); prediction_settings_layout.setContentsMargins(3,3,3,3); prediction_settings_layout.setSpacing(30)
 
-        # Prediction result
+        # Ticker input
+        ticker_symbol_inbox = QLineEdit(); ticker_symbol_inbox.setPlaceholderText("Ticker symbol...")
+        ticker_symbol_inbox.setStyleSheet("font-size: 16px; font-family: Aller Display"); ticker_symbol_inbox.setFixedHeight(30)
+
+        # Risk slider
+        risk_layout = QVBoxLayout(); risk_layout.setContentsMargins(0,0,0,0); risk_layout.setSpacing(0)
+
+        risk_slider = QSlider(Qt.Horizontal)
+        risk_slider.setStyleSheet("""QSlider {border: none}"""); risk_slider.setTickPosition(QSlider.TicksBelow)
+        risk_slider.setMinimum(1); risk_slider.setMaximum(10); risk_slider.setTickInterval(1); risk_slider.setSingleStep(1)
+        def update_value(value): risk_value_label.setText(f"Risk tolerance: {value}")
+        risk_slider.valueChanged.connect(update_value)
+
+        risk_value_label = QLabel("Risk tolerance: 1"); risk_value_label.setAlignment(Qt.AlignCenter); risk_value_label.setStyleSheet("border: none; font-size: 13px; font-family: Aller Display")
+
+        number_layout = QHBoxLayout()
+        for i in range(1, 11): nlabel = QLabel(str(i)); nlabel.setAlignment(Qt.AlignCenter); nlabel.setStyleSheet("border: none"); number_layout.addWidget(nlabel)
+
+        risk_layout.addWidget(risk_value_label); risk_layout.addWidget(risk_slider); risk_layout.addLayout(number_layout)
+
+
+        # Time period
+        time_period_layout = QHBoxLayout(); time_period_layout.setSpacing(10)
+
+        self.btns["time_period_btns"] = []
+
+        day_btn = self.make_time_btn("day_btn", "time_period_btns", "Day", height=30)
+        month_btn = self.make_time_btn("month_btn", "time_period_btns", "Month", height=30)
+        year_btn = self.make_time_btn("year_btn", "time_period_btns", "Year", height=30)
+
+        time_period_layout.addWidget(day_btn); time_period_layout.addWidget(month_btn); time_period_layout.addWidget(year_btn)
+
+
+
+        prediction_settings_layout.addWidget(ticker_symbol_inbox)
+        prediction_settings_layout.addLayout(risk_layout)
+        prediction_settings_layout.addLayout(time_period_layout)
+        prediction_settings_layout.addStretch()
+
+        ## Prediction result
         prediction_result_frame = self.coloured_frame("transparent")
         prediction_result_label = QLabel("Prediction result")
         prediction_result_label.setAlignment(Qt.AlignCenter)
@@ -202,36 +241,56 @@ class MainWindow(QMainWindow):
         self.btns[group].append(btn)
         return btn
 
-    def make_toolbar_btn(self, name, group, img, width = None, height = None):
-        btn = QPushButton()
-        btn.setCheckable(True)
-        if height and width:
-            btn.setFixedSize(width, height)
-        elif height and not width:
-            btn.setFixedHeight(height)
-        elif width and not height:
-            btn.setFixedWidth(width)
-        btn.img = img
-        btn.name = name
-        btn.group = group
-        btn.setStyleSheet(f"""
-        QPushButton {{background-image: url('{btn.img}'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
-        QPushButton:hover {{background-color: #adadad}} 
-        """)
+    def make_time_btn(self, name, group, text, height):
+        btn = QPushButton(); btn.setCheckable(True); btn.setFixedHeight(height)
+        btn.name = name; btn.group = group; btn.text = text
 
-        btn.clicked.connect(lambda checked, b=btn: self.handle_toolbar_btn_click(b))
+        btn.setStyleSheet("""
+        QPushButton {background-color: #e3e3e3; font-size: 13px; font-family: Aller display}
+        QPushButton:hover {background-color: #adadad}""")
+        btn.setText(text)
+
+        def handle_time_btn_click(clicked_btn):
+            for grp_btn in self.btns[clicked_btn.group]:
+                if grp_btn == clicked_btn:
+                    grp_btn.setStyleSheet("QPushButton {background-color: #8a8a8a; font-size: 13px; font-family: Aller display}")
+                    self.testfunc(grp_btn)
+                else:
+                    grp_btn.setChecked(False)
+                    grp_btn.setStyleSheet("""QPushButton {background-color: #e3e3e3; font-size: 13px; font-family: Aller display}
+                                          QPushButton:hover {background-color: #adadad} """)
+
+        btn.clicked.connect(lambda checked: handle_time_btn_click(btn))
         self.btns[group].append(btn)
         return btn
 
-    def handle_toolbar_btn_click(self, clicked_btn):
-        for btn in self.btns[clicked_btn.group]:
-            if btn == clicked_btn:
-                btn.setStyleSheet(f"""QPushButton {{background-image: url('{btn.img}'); background-repeat: no-repeat; background-position: center; background-color: #8a8a8a}}""")
-                self.testfunc(btn)
-            else:
-                btn.setChecked(False)
-                btn.setStyleSheet(f"""QPushButton {{background-image: url('{btn.img}'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
-                                      QPushButton:hover {{background-color: #adadad}} """)
+
+    def make_toolbar_btn(self, name, group, img, height):
+        btn = QPushButton()
+        btn.setCheckable(True)
+        btn.setFixedHeight(height)
+        btn.name = name
+        btn.group = group
+        btn.img = img
+
+        btn.setStyleSheet(f"""
+        QPushButton {{background-image: url('{btn.img}'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
+        QPushButton:hover {{background-color: #adadad}}""")
+
+        def handle_toolbar_btn_click(clicked_btn):
+            for grp_btn in self.btns[clicked_btn.group]:
+                if grp_btn == clicked_btn:
+                    grp_btn.setStyleSheet(f"""QPushButton {{background-image: url('{grp_btn.img}'); background-repeat: no-repeat; background-position: center; background-color: #8a8a8a}}""")
+                    self.testfunc(grp_btn)
+                else:
+                    grp_btn.setChecked(False)
+                    grp_btn.setStyleSheet(f"""QPushButton {{background-image: url('{grp_btn.img}'); background-repeat: no-repeat; background-position: center; background-color: #e3e3e3}}
+                                          QPushButton:hover {{background-color: #adadad}} """)
+
+        btn.clicked.connect(lambda checked: handle_toolbar_btn_click(btn))
+        self.btns[group].append(btn)
+        return btn
+
 
     def coloured_frame(self, colour, min_height=None):
         frame = QFrame()
