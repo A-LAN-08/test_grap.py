@@ -154,13 +154,12 @@ class MainWindow(QMainWindow):
         # Temporary function to test button click activation
         print("testfunc", btn.name)
         if btn.name == "save_graph_btn":
-            self.show_popup(btn)
+            self.show_graph_save_popup(btn)
         elif btn.name == "confirm_pd_btn":
             self.start_prediction_simulation()
 
     def start_prediction_simulation(self) -> None:
         print("Prediction starting...") # DEBUG
-
         # Find ticker and risk level inputs
         ticker = self.ticker_symbol_inbox.text(); risk_level = self.risk_slider.value()
         # Find selected Prediction Type button        
@@ -173,15 +172,6 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Input Error", "Please fill in all prediction settings before confirming.")
             return
 
-        # Print gathered inputs (TEMP DEBUG)
-        print(f"""
---- INPUTS RECEIVED ---
-Ticker: {ticker}
-Prediction Type: {selected_prediction_type}
-Risk Level: {risk_level}
-Time Period: {selected_time_period}
------------------------""")
-
         self.pd_set_frame.setEnabled(False)
         self.prediction_result_label.setText("Processing... (10s)")
 
@@ -190,8 +180,7 @@ Time Period: {selected_time_period}
             # Re-enable prediction settings and show results (TBD: to be developed further)
             self.pd_set_frame.setEnabled(True)
             self.prediction_result_label.setText(f"""
-Completed Prediction. . .
-                                               
+Completed Prediction. . .                       
 --- INPUTS RECEIVED ---
 Ticker: {ticker}
 Prediction Type: {selected_prediction_type}
@@ -214,7 +203,7 @@ Time Period: {selected_time_period}
         msg.adjustSize(); pos = self.rect().center() - msg.rect().center(); msg.move(pos); msg.show()
         QTimer.singleShot(2000, msg.close)
 
-    def show_popup(self, btn) -> None:
+    def show_graph_save_popup(self, btn) -> None:
         # Function to show popup for saving graph (TBD: to be developed further)
         # Creates popup dialog and positions it below the button
         popup = QDialog(self); popup.setWindowTitle(btn.name); popup.setModal(True); popup.setFixedSize(200, 100)
