@@ -17,7 +17,7 @@ CACHE_DIR = "stock_data_cache"
 SAVE_DATA = True  # Set to False to skip saving
 
 
-class Graph:
+class LineGraph:
     def __init__(self, ticker):
         self.ticker = ticker.upper()
         self.start_date = "2000-01-01" # Will be as late as possible
@@ -26,7 +26,7 @@ class Graph:
 
         close_data = self.load_data(self.ticker)
 
-        plot_stock_data(close_data)
+        self.plot_data(close_data)
 
 
     def load_data(self, ticker):
@@ -36,8 +36,6 @@ class Graph:
             return data["Close"]
 
         print(f"Downloading {ticker} data...") # temp Debug
-
-
         data = yf.download(ticker, start="2000-01-01", end="2025-01-12", progress=False) # dates temp
 
         # debugs
@@ -58,69 +56,87 @@ class Graph:
 
         return data["Close"]
 
-def get_cache_filename(ticker, start, end):
-    # Generate a cache filename based on ticker and date range
-    return os.path.join(CACHE_DIR, f"{ticker}_{start}_{end}.csv")
+    def plot_data(self, data):
 
-def load_cached_data(ticker, start, end):
-    # Try to load data from cache
-    cache_file = get_cache_filename(ticker, start, end)
-    if os.path.exists(cache_file):
-        try:
-            print(f"Loading cached data from {cache_file}...")
-            data = pd.read_csv(cache_file, index_col='Date', parse_dates=True)
-            return data[PLOT_COLUMN]
-        except Exception as e:
-            print(f"Error loading cache: {e}")
-            return None
-    return None
+        dates_in_seconds = data.index.to_numpy().astype(np.int64) // 10**9
+        prices = data.values.astype(float).flatten()
 
-def save_data_to_cache(data, ticker, start, end):
-    """Save data to cache."""
-    if not os.path.exists(CACHE_DIR):
-        os.makedirs(CACHE_DIR)
-    cache_file = get_cache_filename(ticker, start, end)
-    try:
-        data.to_csv(cache_file)
-        print(f"Data saved to {cache_file}")
-    except Exception as e:
-        print(f"Error saving cache: {e}")
+        app = QApplication(sys.argv)
+        main_window = QMainWindow()
+        main_window.setWindowTitle(f"{self.ticker} Stock Price")
 
-def get_stock_data(ticker, start, end):
-    """Downloads stock data from yfinance or loads from cache."""
-    # Try loading from cache first
-    cached_data = load_cached_data(ticker, start, end)
-    if cached_data is not None:
-        return cached_data
-    
-    print(f"Downloading {ticker} data from {start} to {end}...")
-    try:
-        data = yf.download(ticker, start=start, end=end, progress=False)
-        
-        if data.empty:
-            print(f"yfinance returned an empty dataset for {ticker}.")
-            return None
-            
-        if PLOT_COLUMN not in data.columns:
-            print(f"Error: '{PLOT_COLUMN}' column not found. Available columns: {list(data.columns)}")
-            return None
-        
-        result = data[PLOT_COLUMN]
-        
-        if SAVE_DATA:
-            save_data_to_cache(data, ticker, start, end)
-        
-        return result
-        
-    except Exception as e:
-        print(f"An unexpected error occurred during download: {e}")
-        return None
+        graph_frame = QWidget()
+        main_window.setCentralWidget(graph_frame)
+        graph_layout = QVBoxLayout(graph_frame)
+
+        date_axis = pg.DateAxisItem(orientation='bottom')
+        plot_widget = pg.PlotWidget(axisItems={'bottom': date_axis})
+        graph_layout.addWidget(plot_widget)
+
+        curve = plot_widget.plot(dates_in_seconds, prices, pen=pg.mkPen(color='#3498db', width=2), name='Close')
+
+        plot_widget.setTitle(f"{'Close'} Price for {self.ticker}")
+        plot_widget.setLabel('left', 'Price', units='USD')
+        plot_widget.setLabel('bottom', 'Date')
+        plot_widget.showGrid(x=True, y=True)
+
+
+
+        stretch_state = {'dragging': False, 'start_x': None, 'start_range': None}
+
+        plot_item = plot_widget.getPlotItem()
+        view_box = plot_item.vb
+        original_mouseDragEvent = view_box.mouseDragEvent
+
+        def custom_mouseDragEvent(ev, axis=None):
+            # Custom drag handler to detect bottom-of-graph drags for x-axis stretching
+            if ev.button() == 1:  # Left mouse button
+                pos = ev.pos()
+                view_rect = view_box.sceneBoundingRect()
+
+                bottom_threshold = 100
+                if pos.y() > view_rect.bottom() - bottom_threshold:
+                    if ev.isStart():
+                        stretch_state.update({'dragging': True, 'start_x': pos.x(), 'start_range': view_box.viewRange()})
+                        # stretch_state['dragging'] = True
+                        # stretch_state['start_x'] = pos.x()
+                        # stretch_state['start_range'] = view_box.viewRange()
+
+                    if stretch_state['dragging'] and not ev.isFinish():
+                        delta = pos.x() - stretch_state['start_x']
+
+                        x_range = stretch_state['start_range'][0]
+                        y_range = stretch_state['start_range'][1]
+
+                        view_width = view_rect.width()
+                        data_width = x_range[1] - x_range[0]
+
+                        stretch_factor = 1 - (delta / view_width) * 0.5
+                        stretch_factor = max(0.1, min(2.0, stretch_factor))
+
+                        new_width = data_width / stretch_factor
+                        center_x = (x_range[0] + x_range[1]) / 2
+
+                        new_x_range = [center_x - new_width / 2, center_x + new_width / 2]
+                        view_box.setRange(xRange=new_x_range, yRange=y_range, padding=0)
+
+                    if ev.isFinish():
+                        stretch_state['dragging'] = False
+
+                    ev.accept()
+                    return
+
+                else: original_mouseDragEvent(ev, axis)
+
+        view_box.mouseDragEvent = custom_mouseDragEvent
+
+
 
 def plot_stock_data(data):
     """
     Plots the stock data using PyQtGraph with a crosshair that appears only when hovering over the line.
     """
-    
+    '''
     # 1. Prepare Data
     dates_in_seconds = data.index.to_numpy().astype(np.int64) // 10**9
     prices = data.values.astype(float).flatten()
@@ -150,7 +166,7 @@ def plot_stock_data(data):
     plot_widget.setLabel('left', 'Price', units='USD')
     plot_widget.setLabel('bottom', 'Date')
     plot_widget.showGrid(x=True, y=True)
-    
+    '''
     # --- 3. X-Axis Stretching Setup ---
     
     # Store state for x-axis stretching
@@ -312,12 +328,4 @@ def plot_stock_data(data):
 if __name__ == '__main__':
 
     ticker = input("Ticker: ") # Will be taken from box input
-    MainGraph = Graph(ticker)
-
-
-    # aapl_data = get_stock_data(TICKER, START_DATE, END_DATE)
-    #
-    # if aapl_data is not None and not aapl_data.empty:
-    #     plot_stock_data(aapl_data)
-    # else:
-    #     print("Exiting plot due to data error.")
+    MainGraph = LineGraph(ticker)
